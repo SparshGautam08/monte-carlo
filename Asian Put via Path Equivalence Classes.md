@@ -28,7 +28,7 @@ The paper's contribution is a recursion-free mass-shifting enumerator that gener
 
 $$p_u^{k^{\ast}} p_m^{D-k^{\ast}} \left(\frac{p_u p_d}{p_m^2}\right)^{j_-},$$
 
-so **the count-weighted average is the risk-neutral price if and only if p_m² = p_u·p_d**. Matching mean and variance as well turns this into a quadratic in a = 1/λ²:
+so **the count-weighted average is the risk-neutral price iff p_m² = p_u·p_d**. Matching mean and variance as well turns this into a quadratic in a = 1/λ²:
 
 $$3a^2 - (8 - b) a + 4 = 0, \qquad b = \nu^2 \Delta t / \sigma^2,$$
 
