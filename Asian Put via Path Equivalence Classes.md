@@ -10,7 +10,7 @@ An experiment applying the cardinality-tuple equivalence classes from Torres, Sr
 
 ## Method
 
-The paper's contribution is a recursion-free mass-shifting enumerator that generates one representative per class. I did **not** reimplement that algorithm. Instead, a forward pass over the tree merges paths as soon as they share (current position, cardinality tuple), and each class carries its total probability and its path count. This builds exactly the paper's classes $\hat C_{D,k^*}$. I checked that by counting distinct tuples over all 3^D paths for D = 5, 7 and 9, and it reproduces the paper's Figure 1 example (3 paths with sum 102).
+The paper's contribution is a recursion-free mass-shifting enumerator that generates one representative per class. I did **not** reimplement that algorithm. Instead, a forward pass over the tree merges paths as soon as they share (current position, cardinality tuple), and each class carries its total probability and its path count. This builds exactly the paper's classes $\hat C_{D,k^{\ast}}$. I checked that by counting distinct tuples over all 3^D paths for D = 5, 7 and 9, and it reproduces the paper's Figure 1 example (3 paths with sum 102).
 
 ## Results
 
@@ -24,20 +24,20 @@ The paper's contribution is a recursion-free mass-shifting enumerator that gener
 | 14 | 4.8M | 115,069 | 2.48100 |
 | 18 | 387M | 1,967,885 | 2.45451 |
 
-**3. Paths in the same class can have different probabilities.** That is where the interesting part is. The paper averages path sums as Σ p·N_p / Σ N_p, which weights every path equally. Under risk-neutral trinomial probabilities, (0,1,0,1) and (0,0,1,1) have the same tuple but probabilities p_u²p_d and p_m²p_u. More generally, a path ending at k* with j₋ down-steps has probability
+**3. Paths in the same class can have different probabilities.** That is where the interesting part is. The paper averages path sums as Σ p·N_p / Σ N_p, which weights every path equally. Under risk-neutral trinomial probabilities, (0,1,0,1) and (0,0,1,1) have the same tuple but probabilities p_u²p_d and p_m²p_u. More generally, a path ending at k\* with j₋ down-steps has probability
 
-$$p_u^{k^*}\, p_m^{D-k^*} \left(\frac{p_u p_d}{p_m^2}\right)^{j_-},$$
+$$p_u^{k^{\ast}} p_m^{D-k^{\ast}} \left(\frac{p_u p_d}{p_m^2}\right)^{j_-},$$
 
 so **the count-weighted average is the risk-neutral price iff p_m² = p_u·p_d**. Matching mean and variance as well turns this into a quadratic in a = 1/λ²:
 
-$$3a^2 - (8 - b)\,a + 4 = 0, \qquad b = \nu^2 \Delta t / \sigma^2,$$
+$$3a^2 - (8 - b) a + 4 = 0, \qquad b = \nu^2 \Delta t / \sigma^2,$$
 
-whose admissible root λ* → √(3/2) as the drift vanishes. That is the stretch commonly used for Kamrad–Ritchken trees. With λ*, every path into a node is equally likely: the brute-force max/min probability ratio is exactly 1, and the paper's counting formula prices exactly. With any other λ it is biased:
+whose admissible root λ\* → √(3/2) as the drift vanishes. That is the stretch commonly used for Kamrad–Ritchken trees. With λ\*, every path into a node is equally likely: the brute-force max/min probability ratio is exactly 1, and the paper's counting formula prices exactly. With any other λ it is biased:
 
 | λ | Count-weighted minus exact (D = 10) |
 |---|---|
 | 1 (p_m = 0) | −13 cents (zero-probability paths are still counted) |
-| λ* ≈ 1.2223 | 0 |
+| λ\* ≈ 1.2223 | 0 |
 | √2 | +13 cents (~5% of the price) |
 | 2 | +68 cents |
 
@@ -49,7 +49,7 @@ Plots: [`asian_put_classes_vs_paths.png`](plots/asian_put_classes_vs_paths.png),
 
 ## Open questions
 
-- **Growth rate.** I measure the number of classes growing about 2.06^D in total and about 1.97^D at the largest single terminal node, against the 1.612^D in the abstract. Is the 1.612^D figure about a different quantity, such as the positive-side classes $C^+_{D,k^*}$, or am I using a different equivalence relation than intended?
-- **Where the class count peaks.** The largest $|\hat C_{D,k^*}|$ occurs at |k*| ≈ D/3 (for example |k*| = 7 at D = 18), not at k* = 0 as in eq. (6.1). Does (6.1) refer to raw path counts, which do peak at 0, rather than to tuple counts?
+- **Growth rate.** I measure the number of classes growing about 2.06^D in total and about 1.97^D at the largest single terminal node, against the 1.612^D in the abstract. Is the 1.612^D figure about a different quantity, such as the positive-side classes $C^+_{D,k^{\ast}}$, or am I using a different equivalence relation than intended?
+- **Where the class count peaks.** The largest $|\hat C_{D,k^{\ast}}|$ occurs at |k\*| ≈ D/3 (for example |k\*| = 7 at D = 18), not at k\* = 0 as in eq. (6.1). Does (6.1) refer to raw path counts, which do peak at 0, rather than to tuple counts?
 - **General probabilities.** For p_m² ≠ p_u·p_d, the classes could be refined by (tuple, number of flat steps), since that pair fixes a path's probability. Does the weak-composition count extend to this refinement? That would give closed-form weights instead of a forward pass.
 - **Deep trees.** Because the Asian payoff depends only on the path sum, classes with nearly equal sums could be merged or stratified, along the lines of the stratified-sampling application in Section 7.2(A).
