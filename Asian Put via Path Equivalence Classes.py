@@ -11,11 +11,15 @@
 #   1. carries probability mass per class instead of path counts (always exact),
 #   2. shows the paper's count-weighted average is exact iff p_m^2 = p_u * p_d,
 #      and picks the tree stretch lambda that makes this hold,
-#   3. checks everything against brute-force enumeration and Monte Carlo.
+#   3. checks everything against brute-force enumeration and Monte Carlo,
+#   4. shows the paper's degeneracy formula (Theorem 5.18) gives the class
+#      probabilities in closed form when each of its terms is weighted by the
+#      probability its fixed numbers of up, down and stay steps imply.
 import os
 import time
 import itertools
 from collections import defaultdict
+from math import factorial
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -124,6 +128,31 @@ def mc_gbm(D, N, rng, chunk=2 * 10**5):
     return mean, np.sqrt((s2 - N * mean**2) / (N - 1) / N)
 
 
+# Theorem 5.18 of the paper (eqs. 71-75): the number of raw paths with tuple c
+# ending at k* is a sum over crossing vectors m. Each term fixes how many times
+# the path crosses j -> j+1 (u_j) and j+1 -> j (d_j), and stays at j (h_j), so
+# every path it counts has the same probability p_u^U p_m^H p_d^Dn with
+# U = sum u_j, Dn = sum d_j, H = sum h_j. Yields (paths, U, Dn, H) per term.
+def degeneracy_terms(c, kstar, D):
+    occupied = [j for j in range(-D, D + 1) if c[j + D] > 0]
+    a, b = occupied[0], occupied[-1]
+    cj = lambda j: c[j + D] if a <= j <= b else 0
+    eta = lambda j: (0 <= j) - (kstar <= j)    # net crossings j -> j+1 forced by the endpoint
+    base = np.prod([factorial(cj(j) - 1) for j in range(a, b + 1)])
+    # A path crosses j -> j+1 at most as often as it visits j or j+1
+    for m in itertools.product(*(range(min(cj(j), cj(j + 1)) + 1) for j in range(a, b))):
+        u = {j: m[j - a] + max(eta(j), 0) for j in range(a, b)}
+        d = {j: m[j - a] + max(-eta(j), 0) for j in range(a, b)}
+        h = {j: cj(j) - (j == kstar) - u.get(j, 0) - d.get(j - 1, 0) for j in range(a, b + 1)}
+        if (min(h.values()) < 0 or any(u[j] <= 0 for j in range(a, min(kstar, b)))
+                or any(d[j] <= 0 for j in range(max(kstar, a), b))):
+            continue
+        num = np.prod([u[j] for j in range(a, kstar)]) * np.prod([d[j] for j in range(kstar, b)])
+        den = (np.prod([factorial(x) for x in h.values()])
+               * np.prod([factorial(u[j]) * factorial(d[j]) for j in range(a, b)]))
+        yield base * num / den, sum(u.values()), sum(d.values()), sum(h.values())
+
+
 def sanity_checks():
     # Figure 1 of the paper: D = 4, node values 20 + 2k. Paths ending at 0 that
     # visit 0 four times and 1 once all sum to 102, and there are 3 of them.
@@ -178,6 +207,31 @@ if __name__ == "__main__":
         "Count-weighted": "{:.6f}".format, "Count bias": "{:+.2e}".format,
         "Max prob ratio": "{:.3f}".format, "t brute (s)": "{:.3f}".format,
         "t classes (s)": "{:.3f}".format}) + "\n")
+
+    # Theorem 5.18 check: on a tree where paths in a class have different
+    # probabilities, the formula's terms reproduce every class's path count, and
+    # weighting each term by its path probability reproduces every class's
+    # risk-neutral probability, and so the exact price
+    thm_rows = []
+    for D in (4, 6, 8):
+        dx, (pd_, pm_, pu_) = tree_params(D, np.sqrt(2))
+        states = path_classes(D, (pd_, pm_, pu_))
+        weighted = {}
+        count_err = prob_err = 0.0
+        for key, (w, n) in states.items():
+            terms = list(degeneracy_terms(key[1], key[0], D))
+            p518 = sum(cnt * pu_**U * pd_**Dn * pm_**H for cnt, U, Dn, H in terms)
+            count_err = max(count_err, abs(sum(t[0] for t in terms) - n))
+            prob_err = max(prob_err, abs(p518 - w) / w)
+            weighted[key] = (p518, n)
+        thm_rows.append({"D": D, "Classes": len(states), "Max count error": count_err,
+                         "Max rel. prob error": prob_err,
+                         "Price, forward pass": price_from_classes(states, D, dx)[0],
+                         "Price, Thm 5.18 weights": price_from_classes(weighted, D, dx)[0]})
+    print("Theorem 5.18 terms weighted by path probability (lambda = sqrt(2))\n"
+          + pd.DataFrame(thm_rows).to_string(index=False, formatters={
+              "Max count error": "{:.1e}".format, "Max rel. prob error": "{:.1e}".format,
+              "Price, forward pass": "{:.10f}".format, "Price, Thm 5.18 weights": "{:.10f}".format}) + "\n")
 
     # 2. Bias of the count-weighted average as a function of the tree stretch
     D_bias = 10

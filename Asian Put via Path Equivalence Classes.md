@@ -41,14 +41,22 @@ whose admissible root λ\* → √(3/2) as the drift vanishes. That is the stret
 | √2 | +13 cents (~5% of the price) |
 | 2 | +68 cents |
 
-The general fix is to carry probability mass per class, as in result 1, instead of path counts.
+For general probabilities, the forward pass in result 1 carries probability mass per class instead of path counts. Result 4 shows the paper's own degeneracy formula gives those weights in closed form.
 
-**4. Comparison with Monte Carlo under GBM.** With the same number of monitoring dates, the tree prices 1–3 cents above the club Monte Carlo pricer for D ≥ 10. The gap likely comes from the tree's discretization, since it takes only one step per monitoring date; I have not isolated the cause.
+**4. Theorem 5.18 supplies the class probability weights.** Theorem 5.18 counts the raw paths in a class as a sum over crossing vectors m. Each term fixes how many times a path crosses each level upward (u_j), downward (d_j) and stays (h_j), so every path counted by one term has the same probability. Weighting each term by that probability gives the class's risk-neutral probability:
+
+$$P(\hat c) = \sum_{m} N_m p_u^{U(m)} p_m^{H(m)} p_d^{V(m)}, \qquad U = \sum_j u_j, \quad V = \sum_j d_j, \quad H = \sum_j h_j,$$
+
+where N_m is the theorem's term for m.
+
+I implemented the theorem from eqs. (71)–(75) and checked it on every class at D = 4, 6 and 8 (1,744 classes), using λ = √2 so that paths within a class really do have different probabilities. The formula reproduces every class's path count exactly, and the probability-weighted terms reproduce every class's probability from the forward pass to within 5e-16, giving the same Asian put price to 10 decimal places. When p_m² = p_u·p_d every term has the same weight, and this reduces to the paper's uniform average (Corollary 5.20), consistent with result 3.
+
+**5. Comparison with Monte Carlo under GBM.** With the same number of monitoring dates, the tree prices 1–3 cents above the club Monte Carlo pricer for D ≥ 10. The gap likely comes from the tree's discretization, since it takes only one step per monitoring date; I have not isolated the cause.
 
 Plots: [`asian_put_classes_vs_paths.png`](plots/asian_put_classes_vs_paths.png), [`asian_put_count_weighting_bias.png`](plots/asian_put_count_weighting_bias.png), [`asian_put_tree_vs_mc.png`](plots/asian_put_tree_vs_mc.png).
 
 ## Open questions
 
-- **Closed-form class probabilities.** For p_m² ≠ p_u·p_d, a path's probability is fixed by its tuple together with its total number of stay steps. Theorem 5.18 sums over per-level up, down and stay counts, so grouping its terms by total stays might give each class's risk-neutral probability in closed form, replacing the forward pass. Does the formula split that way?
+- **Pricing without enumerating every class.** Result 4 still evaluates every class. Since the probability-weighted terms depend on m only through U, D and H, could they be summed in closed form, or bounded, to price without listing every tuple?
 - **Deep trees.** Because the Asian payoff depends only on the path sum, classes with nearly equal sums could be merged or stratified, along the lines of the stratified-sampling application in Section 9.2(A).
-- **Finer time steps.** Taking several tree steps per monitoring date would reduce the discretization error in result 4, but then only some visits enter the average. Is there a natural extension of the cardinality tuple that counts only visits on monitoring dates?
+- **Finer time steps.** Taking several tree steps per monitoring date would reduce the discretization error in result 5, but then only some visits enter the average. Is there a natural extension of the cardinality tuple that counts only visits on monitoring dates?
