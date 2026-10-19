@@ -9,7 +9,7 @@
 # paths ending at a node are equally likely. Under risk-neutral trinomial
 # probabilities they usually are not, so this script
 #   1. carries probability mass per class instead of path counts (always exact),
-#   2. shows the paper's count-weighted average is exact iff p_m^2 = p_u * p_d,
+#   2. shows the paper's count-weighted average is exact if and only if p_m^2 = p_u * p_d,
 #      and picks the tree stretch lambda that makes this hold,
 #   3. checks everything against brute-force enumeration and Monte Carlo.
 import os
@@ -43,7 +43,7 @@ def tree_params(D, lam):
 
 # A path ending at k* with j_- down-steps has probability
 #   p_u^{k*} p_m^{D-k*} (p_u p_d / p_m^2)^{j_-},
-# so all paths to a node are equally likely iff p_m^2 = p_u p_d. With
+# so all paths to a node are equally likely if and only if p_m^2 = p_u p_d. With
 # a = 1/lam^2 and b = NU^2 dt / sigma^2 this is 3a^2 - (8 - b)a + 4 = 0;
 # the smaller root keeps p_m >= 0. With zero drift it is the classic lam^2 = 3/2.
 def equiprobable_lambda(D):
