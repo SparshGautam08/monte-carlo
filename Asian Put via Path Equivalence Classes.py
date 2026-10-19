@@ -1,7 +1,7 @@
 # Exact pricing of an arithmetic-average Asian put on a recombining trinomial tree
 # by grouping paths into equivalence classes, following Torres, Sreenivas & Sowers,
-# "On the Enumeration of all Unique Paths of Recombining Trinomial Trees"
-# (arXiv:2510.02727). Two paths that end at the same node and visit each price
+# "Path Enumeration by Position-Visit Counts in Recombining Trinomial Trees"
+# (arXiv:2510.02727v2). Two paths that end at the same node and visit each price
 # level the same number of times (the same "cardinality tuple") have the same
 # path sum, so the Asian payoff only has to be evaluated once per class.
 #
@@ -221,20 +221,20 @@ if __name__ == "__main__":
             "Tree MC CI": "{:.5f}".format, "GBM MC": "{:.5f}".format,
             "GBM MC CI": "{:.5f}".format, "Tree - GBM": "{:+.5f}".format}))
 
-    # Growth of the number of classes against 3^D and the paper's 1.612^D rate
+    # Growth of the number of classes against 3^D and the paper's O(D 2^D) bound
     deep = conv[conv["D = m"] >= 8]
     growth = np.polyfit(deep["D = m"], np.log(deep["Classes"]), 1)[0]
     growth_node = np.polyfit(deep["D = m"], np.log(deep["Max per node"]), 1)[0]
     print(f"\nFitted growth, D >= 8: all classes ~ {np.exp(growth):.3f}^D, largest single node "
-          f"~ {np.exp(growth_node):.3f}^D (paper: 1.612^D; raw paths: 3^D)")
+          f"~ {np.exp(growth_node):.3f}^D (paper: O(D 2^D), base 2; raw paths: 3^D)")
 
     # Plots
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.semilogy(conv["D = m"], conv["Paths 3^D"], "o-", label="All paths, $3^D$")
     ax.semilogy(conv["D = m"], conv["Classes"], "o-", label="Equivalence classes (position, tuple)")
     Ds = conv["D = m"].to_numpy(dtype=float)
-    ax.semilogy(Ds, conv["Classes"].iloc[-1] * 1.612 ** (Ds - Ds[-1]), ":", color="gray",
-                label=r"$\propto 1.612^D$ (paper)")
+    ax.semilogy(Ds, conv["Classes"].iloc[-1] * Ds / Ds[-1] * 2.0 ** (Ds - Ds[-1]), ":", color="gray",
+                label=r"$\propto D\,2^D$ (paper's bound)")
     ax.set_xlabel("Tree depth D (= monitoring dates)")
     ax.set_ylabel("Count")
     ax.set_title("Paths vs. path equivalence classes")
