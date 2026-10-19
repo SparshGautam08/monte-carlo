@@ -17,7 +17,7 @@ The script also compares standard Monte Carlo with antithetic variates, benchmar
 
 ## Asian call
 
-Prices an arithmetic-average Asian call (50 monitoring dates) by Monte Carlo, simulating paths in chunks to keep memory bounded. There is no closed form for the arithmetic Asian, so the same paths also price the geometric Asian call, which is checked against its exact closed-form price.
+Prices an arithmetic-average Asian call (50 monitoring dates) by Monte Carlo, simulating paths in chunks to keep memory bounded. There is no closed form for the arithmetic Asian, so the same paths also price the geometric Asian call, which is checked against its exact closed-form price. It also compares two variance reduction methods with standard Monte Carlo: a control variate using the geometric Asian call (about 1,100× less variance) and moment matching (about 8× less variance, with its small-batch bias measured).
 
 ## Asian put via path equivalence classes
 
